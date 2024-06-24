@@ -13,7 +13,9 @@ func main() {
 	config := fiber.Config{}
 
 	tracer := otel.Tracer("test-server")
-	tp := initTracer()
+
+	tracerCtx := context.Background()
+	tp := initHttpTracer(tracerCtx)
 	defer func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
 			fmt.Printf("Error shutting down tracer provider: %v", err)
@@ -24,9 +26,10 @@ func main() {
 	myHandler := NewMyHandler(tracer, hdsvc)
 
 	app := fiber.New(config)
-  app.Use(otelfiber.Middleware())
+	app.Use(otelfiber.Middleware())
 	app.Get("/error", myHandler.HandleGetError)
-	app.Get("/ff", myHandler.HandleGetFireForget)
+	app.Get("/ff", myHandler.HandleGetBackgroundOp)
+  app.Get("/block", myHandler.HandleGetBlocking)
 
 	app.Listen(":3333")
 }
